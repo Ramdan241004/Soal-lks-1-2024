@@ -201,4 +201,11 @@ API Gateway adalah komponen penting dalam proyek ini. Anda harus menggunakan pub
 
 ---
 
-Endpoint untuk LLM Untuk LLM, Anda diwajibkan membuat dua endpoint: **/us-east-1** dan **/us-west-2** masing-masing mengarah ke LLM Load Balancer di region yang bersangkutan. Perhatikan bahwa aplikasi client hanya akan mengakses endpoint LLM tanpaix **/api** (lihat detail di bagian LLM Section mengenai akses endpoint). Contoh: untuk mengakses endpoint LLM di region **us-east-1**, endpoint akan menjadi: **https://api_gateway_endpoint_url/us-east-1/tags** bukan **/api/tags**
+Endpoint untuk LLM Untuk LLM, Anda diwajibkan membuat dua endpoint: **/us-east-1** dan **/us-west-2** masing-masing mengarah ke LLM Load Balancer di region yang bersangkutan. Perhatikan bahwa aplikasi client hanya akan mengakses endpoint LLM tanpaix **/api** (lihat detail di bagian LLM Section mengenai akses endpoint). Contoh: untuk mengakses endpoint LLM di region **us-east-1**, endpoint akan menjadi: **https://api_gateway_endpoint_url/us-east-1/tags** bukan **/api/tags** Metode yang diizinkan adalah POST dan GET. Anda mungkin memerlukan VPC Link dengan NLB (Network Load Balancer) untuk menghubungkan API Gateway dan LLM Load Balancer.
+
+| Endpoint	   | Method |	Target                    |
+|--------------|--------|---------------------------|
+| /us-east-1/* | GET	  | LLM LB Region N. Virginia |
+| /us-east-1/* | POST	  | LLM LB Region N. Virginia |
+| /us-west-1/* | GET	  | LLM LB Region Oregon      |
+| /us-west-1/* | POST	  | LLM LB Region Oregon      |
