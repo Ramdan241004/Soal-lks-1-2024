@@ -209,3 +209,162 @@ Endpoint untuk LLM Untuk LLM, Anda diwajibkan membuat dua endpoint: **/us-east-1
 | /us-east-1/* | POST	  | LLM LB Region N. Virginia |
 | /us-west-1/* | GET	  | LLM LB Region Oregon      |
 | /us-west-1/* | POST	  | LLM LB Region Oregon      |
+
+# Aplikasi Chat Bahasa Inggris
+Ini adalah aplikasi asisten AI yang dirancang khusus untuk pembelajaran bahasa Inggris. Tujuannya adalah untuk memberikan pengalaman belajar yang komprehensif dan interaktif bagi pengguna yang ingin meningkatkan kemampuan bahasa Inggris mereka. Aplikasi ini menggunakan teknologi AI canggih untuk memfasilitasi pembelajaran bahasa yang menarik dan efektif melalui berbagai fitur interaktif.
+
+## TechStack
+
+Sistem Aplikasi Chat Bahasa Inggris menggunakan sejumlah teknologi agar dapat berjalan dengan baik:
+- [Node.js](https://nodejs.org/) - Runtime untuk fungsi lambda
+- [NextJS](https://nextjs.org/) - Framework JavaScript progresif dan dapat diadopsi secara bertahap
+- [API Gateway](https://aws.amazon.com/api-gateway/) - Layanan terkelola penuh untuk membuat, mempublikasikan, memelihara, memantau, dan mengamankan API dalam skala apa pun.
+- [Amazon Cognito](https://aws.amazon.com/pm/cognito/) - Layanan autentikasi pengguna, otorisasi, dan manajemen pengguna untuk aplikasi web dan mobile
+- [PostgresQL](https://www.postgresql.org) - Database relasional open-source yang kuat.
+
+<hr>
+
+## Pengaturan Front-End
+Folder root untuk proyek Front-End adalah **client-apps**.
+### Variabel Lingkungan Front-End
+Variabel lingkungan ini harus dijalankan selama fase build, dan pastikan semua environment sudah diatur sebelum membangun atau mengompilasi aplikasi. Aplikasi hanya boleh membaca environment dari file `.env`, tetapi jangan pernah mengunggah file `.env` ke Git repository atau Anda akan kehilangan poin.
+```sh
+AUTH_SECRET="GENERATE_RANDOM_STRING_SECRET"
+AUTH_URL="YOUR_AMPLIFY_URL" # http://AMPLIFY_URL
+NEXT_PUBLIC_COGNITO_CLIENT_ID="YOUR_COGNITO_APPS_CLIENT_ID"
+NEXT_PUBLUC_COGNITO_ID_TOKEN_EXPIRED="YOUR_COGNITO_ID_TOKEN_EXPIRED_IN_MINUTES" # 10
+NEXT_PUBLIC_API_GATEWAY_URL="YOUR_API_GATEWAY_URL"
+```
+
+#### Generate Random String
+Untuk menghasilkan string acak untuk auth secret Anda bisa menggunakan perintah ini:
+```sh
+openssl rand -base64 16
+```
+
+### Pengaturan Proyek
+
+```sh
+npm install
+```
+
+### Kompilasi dan Hot-Reload untuk Development
+
+```sh
+npm run dev
+```
+
+### Type-Check, Kompilasi, dan Minify untuk Production
+
+```sh
+npm run build
+```
+
+Anda dapat menggunakan halaman check (`http://FRONTEND_HOST/check`) untuk memeriksa koneksi ke backend endpoint, Anda perlu login untuk mengakses endpoint ini.
+<hr>
+
+## Pengaturan Backend
+
+### Endpoint API
+Anda dapat membaca spesifikasi API Endpoint untuk `/conversations` di API Gateway pada detail dokumen.
+
+### Source Code Lambda
+Anda dapat menggunakan semua kebutuhan Lambda di `/serverless/src`.
+
+### Pengaturan LLM Worker
+Semua konfigurasi untuk LLM Workers harus dikelola menggunakan Ansible playbook untuk konfigurasi otomatis. Anda dapat menggunakan Ansible playbook yang terletak di `/serverless/playbook.yml` untuk mengotomatisasi konfigurasi semua LLM Workers. Pastikan menyesuaikan variabel yang diperlukan dalam file playbook `efs_ip: "YOUR_EFS_IP"`.
+
+Di lingkungan AWS Anda, Anda dapat menjalankan playbook ini menggunakan AWS Systems Manager (SSM) untuk mengotomatisasi proses konfigurasi.
+
+<hr>
+## **Endpoint API LLM**
+> ### Daftar Model
+```sh
+GET /api/tags
+```
+Menampilkan daftar model yang tersedia di server LLM. Contoh Request :
+```sh
+curl http://SERVER_HOST:11434/api/tags
+```
+
+> ### Pull Model
+```sh
+POST /api/pull
+```
+Mengunduh sebuah model dari library. Pull yang dibatalkan akan dilanjutkan dari posisi terakhir, dan beberapa pemanggilan akan berbagi progres unduhan yang sama.
+
+#### Parameter
+- `name` : nama model yang akan diunduh
+- `insecure`: (opsional) izinkan koneksi tidak aman ke library. Gunakan hanya jika Anda mengunduh dari library sendiri selama pengembangan.
+- `stream` : (opsional) jika `false` maka respon akan dikembalikan sebagai satu objek respon, bukan stream objek.
+
+#### Contoh Request
+```sh
+curl http://SERVER_HOST:11434/api/pull -d '{
+  "name": "orca-mini"
+}'
+```
+
+> ### Generate Embedding
+```sh
+POST /api/embed
+```
+Menghasilkan embedding dari sebuah model
+
+#### Parameter
+- `model` : nama model yang digunakan untuk menghasilkan embedding
+- `input` : teks atau daftar teks yang akan dibuat embedding
+
+#### Contoh Request
+```sh
+curl http://SERVER_HOST:11434/api/embed -d '{
+  "model": "nomic-embed-text",
+  "input": "Why is the sky blue?"
+}'
+```
+
+> ### Chat Stream
+```sh
+POST /api/chat
+```
+Menghasilkan pesan berikutnya dalam sebuah chat dengan model yang disediakan. Ini adalah endpoint streaming, jadi akan ada serangkaian respon. Streaming dapat dinonaktifkan dengan menggunakan "stream": false. Objek respon terakhir akan menyertakan statistik dan data tambahan dari permintaan.
+
+#### Parameter
+- `model` : nama model
+- `messages` : pesan-pesan dalam chat, ini bisa digunakan untuk menyimpan memori percakapan
+- `stream` : jika `false` maka respon akan dikembalikan sebagai satu objek respon, bukan stream objek Objek `message` memiliki field berikut:
+- `role` : peran dari pesan, bisa berupa `system`, `user`, `assistant`
+- `content` : isi pesan
+
+#### Contoh Request
+```sh
+curl http://SERVER_HOST:11434/api/chat -d '{
+  "model": "orca-mini",
+  "messages": [
+    {
+      "role": "user",
+      "content": "why is the sky blue?"
+    }
+  ]
+}'
+```
+
+> ### Generate a Completion
+```sh
+POST /api/generate
+```
+Menghasilkan respon untuk sebuah prompt dengan model yang disediakan. Ini adalah endpoint streaming, jadi akan ada serangkaian respon. Objek respon terakhir akan menyertakan statistik dan data tambahan dari permintaan.
+
+#### Parameter
+- `model` : nama model
+- `prompt` : prompt untuk menghasilkan respon
+- `stream` : jika false maka respon akan dikembalikan sebagai satu objek respon, bukan stream objek
+
+#### Contoh Request
+POST Request
+```sh
+curl http://localhost:11434/api/generate -d '{
+  "model": "orca-mini",
+  "prompt": "Why is the sky blue?"
+}'
+```
