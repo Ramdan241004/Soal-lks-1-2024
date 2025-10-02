@@ -50,6 +50,36 @@ Contoh arsitektur yang diberikan hanya merupakan salah satu kemungkinan desain u
 
 ## Detail Aplikasi
 
-Proyek ini melibatkan deployment aplikasi SaaS yang dirancang untuk English AI Assistant. Tujuan aplikasi ini adalah untuk meningkatkan pembelajaran bahasa Inggris melalui dialog interaktif dengan AI. Fitur utama aplikasi: Mengidentifikasi kesalahan berbahasa. Memberikan saran kata yang lebih tepat. Menyediakan tips penggunaan kata dalam percakapan. Aplikasi ini dibangun menggunakan: Next.js 14 (untuk frontend). Open-source LLM model (untuk AI backend).
+Proyek ini melibatkan deployment aplikasi SaaS yang dirancang untuk English AI Assistant. Tujuan aplikasi ini adalah untuk meningkatkan pembelajaran bahasa Inggris melalui dialog interaktif dengan AI. Fitur utama aplikasi: Mengidentifikasi kesalahan berbahasa. Memberikan saran kata yang lebih tepat. Menyediakan tips penggunaan kata dalam percakapan. Aplikasi ini dibangun menggunakan: Next.js 14 (untuk frontend). Open-source LLM model (untuk AI backend). Tugas Anda: Deploy frontend (client application) menggunakan ***AWS Amplify***. Deploy backend (API Gateway, Lambda, Database, LLM, dll.) sesuai arendpoints Aplikasi klien harus memiliki fungsionalitas penuh dan akses yang mulus ke backend endpoints. Selain itu, Anda perlu melakukan deployment infrastruktur LLM yang meliputi: LLM Workers, Scoring Workers, Chat Workers Semua komponen ini harus dijalankan di region **N. Virginia (us-east-1)** dan Oregon **(us-west-2)**. Worker tersebut akan menjadi mesin inti untuk pemrosesan LLM. Selanjutnya, Anda harus menyiapkan API endpoints untuk LLM serta membuat endpoint untuk menyimpan data percakapan. Endpoint ini harus dapat diakses publik oleh aplikasi frontend (client app).
 
-Tugas Anda: Deploy frontend (client application) menggunakan ***AWS Amplify***. Deploy backend (API Gateway, Lambda, Database, LLM, dll.) sesuai arsitektur.
+Diagram arsitektur tersedia di bagian Architecture. Source code dapat diakses di repositori berikut: ***https://github.com/betuah/lks-llm***
+
+## Detail Layanan
+
+### Client App
+
+Aplikasi klien untuk LLM menggunakan Next.js versi 14 dan akan terkoneksi dengan AWS Cognito untuk: autentikasi, dan memperoleh ID token untuk otorisasi dengan backend API. Anda harus men-setup Cognito User Pool dengan spesifikasi berikut:
+
+- Gunakan email sebagai atribut untuk sign-in.
+- Jangan gunakan temporary password dalam kebijakan password.
+- Terapkan single authentication factor (faktor tunggal).
+- Atribut yang wajib saat sign-up: name dan email.
+- Izinkan aplikasi menggunakan refresh token dan user password untuk autentikasi.
+
+Aplikasi klien harus di-deploy ke ***AWS Amplify*** sebagai platform hosting. Detail instalasi dan setup environment sudah ada di README.md dalam repositori client.
+
+> **Catatan**: Jika ada user yang sudah sign-up, Anda mungkin perlu mengonfirmasi registrasinya secara manual di Cognito.
+
+## Arsitektur Jaringan
+
+Dalam proyek ini, Anda diwajibkan membuat multi-region network dengan dua zona: lks-zone-a (172.32.0.0/23), lks-zone-b (10.10.0.0/23) Setiap zone direpresentasikan oleh sebuah VPC. Detail:
+
+- Zone A berada di us-east-1, Zone B berada di us-west-2.
+- Pastikan VPC A dapat terhubung dengan VPC B dan sebaliknya.
+- Setiap Zone harus memiliki 3 subnet: 1 Public Subnet, 2 Private Subnet
+- Alokasi subnet: Untuk Public Subnet gunakan network pertama dalam range (hingga 200 host).
+- Gunakan network kedua dan ketiga dalam range sebagai Private Subnet.
+- Public Subnet harus ditempatkan di Availability Zone 1a.
+- Private Subnet ditempatkan di Availability Zone 1a dan 1b.
+- Gunakan hanya 2 Route Table per VPC: lks-rtb-private untuk private subnet. lks-rtb-public untuk public subnet.
+- Pastikan setiap Private Subnet dapat mengakses internet. Untuk menghemat biaya, gunakan NAT Instance (bukan NAT Gateway). Panduan pembuatan NAT Instance ada di bagian NAT Instance Details.
