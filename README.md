@@ -192,35 +192,13 @@ API Gateway adalah komponen penting dalam proyek ini. Anda harus menggunakan pub
 |---------------------------|--------|------------------|----------------------------|
 | /conversations/(uid)      | GET	   | uid	            | None                       |
 | /conversations/(uid)/(id) |	GET    | uid, id	        | None                       |
-| /conversations/(uid)	    | POST   | uid	            | id (required)              |
-|                           |        |                  | title (required)           |
-|                           |        |                  | conversation (required)    |
-|                           |        |                  | embedding (not required)   |
-| /conversations/(uid)/(id)	| PUT    | uid, id	        | title (not required) <br> - conversation (not required) <br> - embedding (not required)
-| /conversations/(uid)	    | DELETE | uid	None
-| /conversations/(uid)/(id) |	DELETE | uid, id	None
+| /conversations/(uid)	    | POST   | uid	            | id (required) <br> title (required) <br> conversation (required) <br>embedding (not required) |
+| /conversations/(uid)/(id)	| PUT    | uid, id	        | title (not required) <br> conversation (not required) <br> embedding (not required)                |
+| /conversations/(uid)	    | DELETE | uid	            | None                       |
+| /conversations/(uid)/(id) |	DELETE | uid, id          |	None                       |
 
 
 
 ---
 
-Endpoint untuk LLM
-
-Untuk LLM, Anda diwajibkan membuat dua endpoint:
-
-/us-east-1
-
-/us-west-2
-
-
-masing-masing mengarah ke LLM Load Balancer di region yang bersangkutan.
-
-⚠️ Perhatikan bahwa aplikasi client hanya akan mengakses endpoint LLM tanpaix /api (lihat detail di bagian LLM Section mengenai akses endpoint).
-
-Contoh: untuk mengakses endpoint LLM di region us-east-1, endpoint akan menjadi:
-
-https://api_gateway_endpoint_url/us-east-1/tags
-
-bukan
-
-/api/tags
+Endpoint untuk LLM Untuk LLM, Anda diwajibkan membuat dua endpoint: **/us-east-1** dan **/us-west-2** masing-masing mengarah ke LLM Load Balancer di region yang bersangkutan. Perhatikan bahwa aplikasi client hanya akan mengakses endpoint LLM tanpaix **/api** (lihat detail di bagian LLM Section mengenai akses endpoint). Contoh: untuk mengakses endpoint LLM di region **us-east-1**, endpoint akan menjadi: **https://api_gateway_endpoint_url/us-east-1/tags** bukan **/api/tags**
