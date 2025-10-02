@@ -36,3 +36,20 @@ Target akhirnya adalah menciptakan lingkungan belajar yang stabil, aman, dapat d
 5. Sistem operasi yang diperbolehkan: Ubuntu minimal versi 20.04.
 6. Semua konfigurasi yang menggunakan playbooks tidak boleh dikonfigurasi manual via **SSH**.
 7. Setiap service yang dibuat harus menggunakan format nama dengan prefix **lks-**, contoh: lks-vpc-zone-a, lks-api-gateway dst.
+8. Saat menjalankan LLM, mungkin Anda akan mengalami respon yang lambat karena tipe instance maksimum yang tersedia hanya **Large**, sedangkan komputasi LLM akan lebih optimal jika menggunakan GPU atau vCPU yang lebih besar. Hal ini bukan masalah, yang penting LLM berjalan dengan benar dan tetap dapat diakses, meskipun agak lambat.
+9. Pastikan Anda memberi label pada setiap AWS service yang Anda buat, kecuali service yang terbentuk otomatis. Memperhatikan detail ini akan membantu mendapatkan poin tambahan.
+10. Ingat untuk selalu memberi deskripsi yang jelas agar hasil kerja Anda mudah dipahami. Hal ini bisa menambah poin.
+11. Sebelum proyek berakhir, lakukan review terhadap pekerjaan Anda dan hapus semua service yang tidak diperlukan agar tidak membingungkan hasil akhir. Jika tidak, Anda bisa kehilangan banyak poin.
+12. Bahasa pemrograman yang digunakan dalam proyek ini adalah JavaScript dengan Node.js versi 18 atau lebih baru.
+
+## Arsitektur
+
+![Infra Diagram](https://github.com/Ramdan241004/Soal-lks-1-2024/blob/main/Modul%201%20%E2%80%93%20Distributed%20LLM.png) 
+
+Contoh arsitektur yang diberikan hanya merupakan salah satu kemungkinan desain untuk aplikasi English AI Assistant. Ini bukan arsitektur final yang wajib diikuti. Arsitektur tersebut menunjukkan bagaimana tim development membangun sistem aplikasi untuk mempermudah pemahaman cara kerjanya. Silakan baca bagian Application Details.
+
+## Detail Aplikasi
+
+Proyek ini melibatkan deployment aplikasi SaaS yang dirancang untuk English AI Assistant. Tujuan aplikasi ini adalah untuk meningkatkan pembelajaran bahasa Inggris melalui dialog interaktif dengan AI. Fitur utama aplikasi: Mengidentifikasi kesalahan berbahasa. Memberikan saran kata yang lebih tepat. Menyediakan tips penggunaan kata dalam percakapan. Aplikasi ini dibangun menggunakan: Next.js 14 (untuk frontend). Open-source LLM model (untuk AI backend).
+
+Tugas Anda: Deploy frontend (client application) menggunakan ***AWS Amplify***. Deploy backend (API Gateway, Lambda, Database, LLM, dll.) sesuai arsitektur.
