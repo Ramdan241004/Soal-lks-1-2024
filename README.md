@@ -1,5 +1,3 @@
-# Soal-lks-1-2024
-
 ## Deskripsi Proyek dan Tugas
 
 Modul ini berdurasi delapan jam – **Hari ke-2 – Proyek 1: Distributed LLM.**
@@ -126,3 +124,52 @@ Keamanan adalah bagian krusial dalam proyek ini. Jangan pernah mengekspos servic
 Memberikan akses berlebihan akan menciptakan celah keamanan pada arsitektur Anda. Batas jumlah Security Group: Maksimal 5 Security Group di us-east-1 Maksimal 2 Security Group di us-west-2
 
 > **Catatan**: jangan lupa untuk menghapus security group yang tidak terpakai di setiap region.
+Baik, saya terjemahkan bagian ini ke Bahasa Indonesia:
+
+## LLM (Large Language Model)
+
+Akan ada tiga jenis worker:
+
+- **LLM Workers** : bertanggung jawab untuk embedding, menarik model, mengambil daftar model, dan tugas LLM lainnya.
+- **Scoring Workers** : khusus untuk menghasilkan feedback penilaian (scoring) pada percakapan di aplikasi.
+- **Chat Workers** : khusus menangani percakapan chat streaming.
+
+Semua worker ini harus di-deploy di setiap VPC Zone pada private subnet, sehingga komputasi untuk LLM, scoring, dan chat terpisah di masing-masing zone. Gunakan instance type t2.large untuk setiap worker.
+
+Konfigurasi Worker
+
+- Setiap worker menggunakan model yang sama, disimpan di **EFS**.
+- Update variabel EFS di playbook Ansible dengan alamat EFS Anda.
+- Jalankan playbook konfigurasi dengan State Manager (AWS Systems Manager - SSM).
+- Pastikan target worker dipilih berdasarkan tags di State Manager.
+- Mungkin perlu install Ansible agent di setiap worker.
+
+Verifikasi Worker Setelah konfigurasi berhasil, lakukan uji coba dengan akses endpoint worker pada port 11434. Cek koneksi:
+```curl
+curl -i http://WORKER_IP:11434/api/tags
+```
+Jika respon HTTP 200, berarti worker sudah berjalan dengan benar. Pull model (contoh orca-mini):
+```curl
+curl http://WORKER_IP:11434/api/pull -d '{"name": "orca-mini"}'
+```
+Cek model yang sudah diunduh:
+```curl
+http://WORKER_IP:11434/api/tags
+```
+
+Lakukan ini untuk semua worker. Jika semua worker memiliki model yang sama, artinya konfigurasi dan mounting EFS berhasil. Load Balancer Buat private application load balancer yang mendengarkan di port 80, dengan routing rule:
+
+- Semua endpoint /api digunakan untuk LLM Worker (kecuali /api/generate dan /api/chat)
+- Endpoint /api/generate/ diarahkan ke Scoring Worker
+- Endpoint /api/chat diarahkan ke Chat Worker
+- Root path (/) harus mengembalikan pesan: "its worked!" dengan HTTP status 200 (untuk health check).
+
+Pastikan setiap worker memiliki backup instance di Availability Zone yang berbeda.
+
+> **Catatan**:
+> - Detail API endpoint LLM ada di GitHub Repository.
+> - Pastikan model **orca-mini**, **llama3**, dan **nomic-embed-text** sudah diunduh (lihat panduan di repository).
+
+## Relational Database
+
+Dalam proyek ini, aplikasi client akan menyimpan seluruh riwayat percakapan di relational database, sekaligus menyimpannya dalam bentuk vector. Gunakan PostgreSQL dengan pgvector plugin untuk menyimpan data percakapan beserta versi vektornya. Lambda function mungkin akan menangani proses enable pgvector extension. Vector percakapan akan digunakan untuk evaluasi feedback real-time selama percakapan berlangsung. Vector ini akan diperbarui seiring bertambahnya percakapan. Pastikan database dikonfigurasi dengan keamanan maksimal.
