@@ -83,3 +83,46 @@ Dalam proyek ini, Anda diwajibkan membuat multi-region network dengan dua zona: 
 - Private Subnet ditempatkan di Availability Zone 1a dan 1b.
 - Gunakan hanya 2 Route Table per VPC: lks-rtb-private untuk private subnet. lks-rtb-public untuk public subnet.
 - Pastikan setiap Private Subnet dapat mengakses internet. Untuk menghemat biaya, gunakan NAT Instance (bukan NAT Gateway). Panduan pembuatan NAT Instance ada di bagian NAT Instance Details.
+
+## NAT Instance
+
+Anda dapat menggunakan instance Ubuntu OS dengan tipe **t2.micro** sebagai NAT Instance, dengan konfigurasi berikut:
+1. Aktifkan IP forwarding dengan mengedit file **sysctl.conf** dan tambahkan atau uncomment baris berikut:
+```sh
+net.ipv4.ip_forward=1
+```
+2. Terapkan perubahan:
+```sh
+sudo sysctl -p
+```
+3. Install **iptables-persistent** agar aturan NAT tetap ada setelah reboot:
+```sh
+sudo apt install iptables-persistent -y
+```
+4. Atur aturan NAT menggunakan **iptables**:
+```sh
+iptables -t nat -A POSTROUTING -o [interface] -j MASQUERADE
+iptables -F FORWARD
+```
+
+> **Catatan**: Semua EC2 instance dan network interface memiliki source dan destination check aktif secara default. Itu artinya, instance hanya bisa mengirim/menerima traffic untuk IP address miliknya sendiri dan tidak mendukung transitive routing.
+
+
+## Storage
+
+Anda akan menggunakan Elastic File System (EFS) sebagai shared storage untuk menyimpan LLM models. Persyaratan: Buat dan deploy EFS dalam VPC di region **us-east-1**. Atur performance ke mode bursting. Aktifkan automatic backup. Mount EFS pada setiap LLM Worker, dengan mount point: **/share** Dilarang membuat EFS di region lain selain yang ditentukan.
+
+## Security
+
+Keamanan adalah bagian krusial dalam proyek ini. Jangan pernah mengekspos service yang memerlukan Security Group ke anywhere. Detail keamanan:
+
+- Database hanya boleh diakses dari Lambda functions (lks-sg-db).
+- LLM Workers hanya boleh diakses melalui port 11434 dari Load Balancer (lks-sg-llm).
+- Load Balancer hanya boleh diakses melalui port 80 (lks-sg-lb).
+- NAT Instance hanya boleh digunakan untuk traffic forwarding → jangan izinkan all traffic dari internet (lks-sg-nat).
+- EFS hanya boleh diakses dari private subnets atau LLM Security Group di setiap VPC zone (lks-sg-efs).
+
+
+Memberikan akses berlebihan akan menciptakan celah keamanan pada arsitektur Anda. Batas jumlah Security Group: Maksimal 5 Security Group di us-east-1 Maksimal 2 Security Group di us-west-2
+
+> **Catatan**: jangan lupa untuk menghapus security group yang tidak terpakai di setiap region.
