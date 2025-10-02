@@ -173,3 +173,54 @@ Pastikan setiap worker memiliki backup instance di Availability Zone yang berbed
 ## Relational Database
 
 Dalam proyek ini, aplikasi client akan menyimpan seluruh riwayat percakapan di relational database, sekaligus menyimpannya dalam bentuk vector. Gunakan PostgreSQL dengan pgvector plugin untuk menyimpan data percakapan beserta versi vektornya. Lambda function mungkin akan menangani proses enable pgvector extension. Vector percakapan akan digunakan untuk evaluasi feedback real-time selama percakapan berlangsung. Vector ini akan diperbarui seiring bertambahnya percakapan. Pastikan database dikonfigurasi dengan keamanan maksimal.
+
+## Lambda Function
+
+Dalam proyek ini, sebuah Lambda function diperlukan untuk menangani permintaan dari API Gateway terkait endpoint /conversations. Anda dapat menggunakan satu Lambda function atau memisahkannya berdasarkan method. Meskipun Anda mungkin perlu melakukan refactor kode yang ada, keputusan Anda akan memengaruhi efisiensi biaya, performa, dan nilai akhir. Seluruh repository untuk Lambda function yang diperlukan dapat ditemukan di source code repository (lihat bagian Technical Description) dengan path: **/serverless/src/function** Lambda function akan memproses permintaan API untuk endpoint **/conversations**, melakukan operasi CRUD (Create, Read, Update, Delete) pada data percakapan yang disimpan di database. Lambda function perlu berinteraksi dengan database untuk menyimpan dan mengambil data percakapan. Untuk memfasilitasi hal ini, function akan menggunakan environment variables untuk konfigurasi database:
+
+- **DB_USER**: Username yang digunakan untuk autentikasi dan akses ke database. Ini harus berupa user yang valid dengan izin yang diperlukan untuk berinteraksi dengan database.
+- **DB_PASSWORD**: Password yang terkait dengan DB_USER. Digunakan bersama username untuk melakukan autentikasi aman ke database.
+- **DB_HOST**: Hostname atau alamat IP dari server database. Ini menentukan lokasi database yang harus dapat dijangkau oleh Lambda function.
+- **DB_PORT**: Nomor port tempat server database berjalan/listening. Ini memungkinkan Lambda function untuk terhubung ke port yang benar.
+- **DB_NAME**: Nama database yang akan dihubungkan oleh Lambda function. Ini menentukan database mana di dalam server yang akan digunakan oleh function.
+
+## API Gateway
+
+API Gateway adalah komponen penting dalam proyek ini. Anda harus menggunakan public API Gateway yang dapat diakses oleh client apps dari region mana pun. Dalam proyek ini, disarankan untuk membuat REST API Gateway dan hanya mengizinkan pengguna yang terdaftar di Cognito untuk mengakses seluruh endpoint pada API Gateway. Aplikasi client akan menggunakan Authorization header sebagai kredensial. Persyaratan Endpoint API untuk Client LLM Application
+
+| Endpoint                  |	Method |	Path Parameters |	Body Payload (Format JSON) |
+|---------------------------|--------|------------------|----------------------------|
+| /conversations/(uid)      | GET	   | uid	            | None                       |
+| /conversations/(uid)/(id) |	GET    | uid, id	        | None                       |
+| /conversations/(uid)	    | POST   | uid	            | id (required)              |
+|                           |        |                  | title (required)           |
+|                           |        |                  | conversation (required)    |
+|                           |        |                  | embedding (not required)   |
+| /conversations/(uid)/(id)	| PUT    | uid, id	        | title (not required) <br> - conversation (not required) <br> - embedding (not required)
+| /conversations/(uid)	    | DELETE | uid	None
+| /conversations/(uid)/(id) |	DELETE | uid, id	None
+
+
+
+---
+
+Endpoint untuk LLM
+
+Untuk LLM, Anda diwajibkan membuat dua endpoint:
+
+/us-east-1
+
+/us-west-2
+
+
+masing-masing mengarah ke LLM Load Balancer di region yang bersangkutan.
+
+⚠️ Perhatikan bahwa aplikasi client hanya akan mengakses endpoint LLM tanpaix /api (lihat detail di bagian LLM Section mengenai akses endpoint).
+
+Contoh: untuk mengakses endpoint LLM di region us-east-1, endpoint akan menjadi:
+
+https://api_gateway_endpoint_url/us-east-1/tags
+
+bukan
+
+/api/tags
